@@ -1,5 +1,5 @@
 {
-  "name": "turso/libsql-laravel",
+  "name": "speniti/libsql-laravel",
   "type": "library",
   "autoload": {
     "psr-4": {
