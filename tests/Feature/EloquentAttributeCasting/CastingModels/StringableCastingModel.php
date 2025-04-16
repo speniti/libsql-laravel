@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class StringableCastingModel extends Model
 {
-    protected $table = 'stringable_casting_table';
+    public $timestamps = false;
 
     protected $guarded = false;
 
-    public $timestamps = false;
+    protected $table = 'stringable_casting_table';
 
     protected function casts(): array
     {

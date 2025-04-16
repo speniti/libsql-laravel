@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 declare(strict_types=1);
 
@@ -7,16 +6,19 @@ namespace Libsql\Laravel;
 
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Support\Facades\DB;
+use JsonException;
 
+/** @implements CastsAttributes<string|false,list<string>|null> */
 class VectorCast implements CastsAttributes
 {
-    public function set($model, $key, $value, $attributes)
+    /** @throws JsonException */
+    public function get($model, $key, $value, $attributes): string|false
     {
-        return DB::raw("vector32('[" . implode(',', $value) . "]')");
+        return json_encode($value, JSON_THROW_ON_ERROR);
     }
 
-    public function get($model, $key, $value, $attributes): mixed
+    public function set($model, $key, $value, $attributes)
     {
-        return json_encode($value);
+        return DB::raw(sprintf("vector32('[%s]')", implode(',', $value)));
     }
 }

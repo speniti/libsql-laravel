@@ -6,6 +6,4 @@ namespace Libsql\Laravel\Database;
 
 use Illuminate\Database\Query\Grammars\SQLiteGrammar;
 
-class LibSQLQueryGrammar extends SQLiteGrammar
-{
-}
+class LibsqlQueryGrammar extends SQLiteGrammar {}

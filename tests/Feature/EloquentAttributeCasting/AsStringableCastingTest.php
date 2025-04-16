@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Feature\EloquentAttributeCasting\CastingModels\StringableCastingModel;
 

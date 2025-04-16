@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class BooleanCastingModel extends Model
 {
-    protected $table = 'boolean_casting_table';
+    public $timestamps = false;
 
     protected $guarded = false;
 
-    public $timestamps = false;
+    protected $table = 'boolean_casting_table';
 
     protected function casts(): array
     {

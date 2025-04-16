@@ -36,19 +36,6 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'id' => 'integer',
-            'email_verified_at' => 'datetime',
-        ];
-    }
-
     public function comments(): HasManyThrough
     {
         return $this->hasManyThrough(Comment::class, Post::class);
@@ -67,5 +54,18 @@ class User extends Authenticatable
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_roles');
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'id' => 'integer',
+            'email_verified_at' => 'datetime',
+        ];
     }
 }

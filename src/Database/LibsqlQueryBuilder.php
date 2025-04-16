@@ -8,23 +8,16 @@ use Illuminate\Database\Query\Builder;
 
 class LibsqlQueryBuilder extends Builder
 {
-    public function exists()
+    public function exists(): bool
     {
         $this->applyBeforeQueryCallbacks();
 
         $results = $this->connection->select(
-            $this->grammar->compileExists($this),
-            $this->getBindings(),
-            !$this->useWritePdo
+            query: $this->grammar->compileExists($this),
+            bindings: $this->getBindings(),
+            useReadPdo: ! $this->useWritePdo
         );
 
-        $results = (array) $results;
-        if (isset($results[0])) {
-            $results = (array) $results[0];
-
-            return (bool) ($results['exists'] ?? false);
-        }
-
-        return false;
+        return (bool) data_get($results, '0.exists', false);
     }
 }

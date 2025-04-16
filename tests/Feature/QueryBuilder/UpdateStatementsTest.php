@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Fixtures\Models\User;
@@ -21,21 +23,16 @@ test('it can update the user\'s email address', function () {
             'email' => 'richan.fongdasen@gmail.com',
         ]);
 
-    $updatedUser = DB::table('users')->find($this->user->getKey());
+    $user = DB::table('users')->find($this->user->getKey());
 
-    expect($updatedUser->email)->toBe('richan.fongdasen@gmail.com');
+    expect($user?->email)->toBe('richan.fongdasen@gmail.com');
 })->group('UpdateStatementsTest', 'QueryBuilder', 'FeatureTest');
 
 test('it can insert a new record with updateOrInsert method', function () {
     DB::table('users')
         ->updateOrInsert(
-            [
-                'name' => 'John Doe',
-                'email' => 'john.doe@gmail.com',
-            ],
-            [
-                'remember_token' => '1234567890',
-            ]
+            ['name' => 'John Doe', 'email' => 'john.doe@gmail.com'],
+            ['remember_token' => '1234567890']
         );
 
     $user = DB::table('users')
@@ -50,28 +47,21 @@ test('it can insert a new record with updateOrInsert method', function () {
 test('it can update an existing record with updateOrInsert method', function () {
     DB::table('users')
         ->updateOrInsert(
-            [
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-            ],
-            [
-                'remember_token' => '1234567890',
-            ]
+            ['name' => $this->user->name, 'email' => $this->user->email],
+            ['remember_token' => '1234567890']
         );
 
-    $updatedUser = DB::table('users')->find($this->user->getKey());
+    $user = DB::table('users')->find($this->user->getKey());
 
     expect(DB::hasModifiedRecords())->toBeTrue()
         ->and(DB::table('users')->count())->toBe(1)
-        ->and($updatedUser->remember_token)->toBe('1234567890');
+        ->and($user?->remember_token)->toBe('1234567890');
 })->group('UpdateStatementsTest', 'QueryBuilder', 'FeatureTest');
 
 test('it can increment and decrement a column value', function () {
     DB::table('users')->increment('id', 5);
-
     expect(DB::table('users')->first()->id)->toBe(6);
 
     DB::table('users')->decrement('id', 3);
-
     expect(DB::table('users')->first()->id)->toBe(3);
 })->group('UpdateStatementsTest', 'QueryBuilder', 'FeatureTest');

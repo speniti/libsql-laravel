@@ -8,3 +8,16 @@ vendor/
 *.db
 tests/database/*
 !tests/database/.gitkeep
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/scopes/Source_Files.xml
+/.idea/.gitignore
+/.idea/blade.xml
+/.idea/laravel-idea.xml
+/.idea/laravel-idea-personal.xml
+/.idea/libsql-laravel.iml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/php.xml
+/.idea/php-test-framework.xml
+/.idea/phpunit.xml
+/.idea/vcs.xml

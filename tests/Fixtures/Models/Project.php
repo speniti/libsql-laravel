@@ -22,6 +22,16 @@ class Project extends Model
         'name',
     ];
 
+    public function deployments(): HasManyThrough
+    {
+        return $this->hasManyThrough(Deployment::class, Environment::class);
+    }
+
+    public function environments(): HasMany
+    {
+        return $this->hasMany(Environment::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -32,15 +42,5 @@ class Project extends Model
         return [
             'id' => 'integer',
         ];
-    }
-
-    public function environments(): HasMany
-    {
-        return $this->hasMany(Environment::class);
-    }
-
-    public function deployments(): HasManyThrough
-    {
-        return $this->hasManyThrough(Deployment::class, Environment::class);
     }
 }

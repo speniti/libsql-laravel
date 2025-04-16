@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Fixtures\Models\User;
@@ -58,10 +60,10 @@ test('it can get the auto increment id as the result of insert command', functio
         'email' => $expectation->email,
     ]);
 
-    $newUser = DB::table('users')->find($result);
+    $user = DB::table('users')->find($result);
 
     expect(DB::table('users')->count())->toBe(2)
         ->and($result)->toBe(2)
-        ->and($newUser->name)->toBe($expectation->name)
-        ->and($newUser->email)->toBe($expectation->email);
+        ->and($user?->name)->toBe($expectation->name)
+        ->and($user?->email)->toBe($expectation->email);
 })->group('InsertStatementsTest', 'QueryBuilder', 'FeatureTest');

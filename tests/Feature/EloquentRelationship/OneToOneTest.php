@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Fixtures\Models\Phone;
 use Libsql\Laravel\Tests\Fixtures\Models\User;
@@ -29,7 +31,7 @@ test('it can retrieve the related model in one to one relationship', function ()
 
 test('it can retrieve the related model in one to one relationship using eager loading', function () {
     $user = User::with('phone')->findOrFail($this->user->getKey());
-    $phone = $user->phone;
+    $phone = $user?->phone;
 
     expect($phone)->not->toBeNull()
         ->and($phone->getKey())->toBe($this->phone->getKey())
@@ -50,7 +52,7 @@ test('it can retrieve the related model in inverted way of one to one relationsh
 
 test('it can retrieve the related model in inverted way of one to one relationship using eager loading', function () {
     $phone = Phone::with('user')->findOrFail($this->phone->getKey());
-    $user = $phone->user;
+    $user = $phone?->user;
 
     expect($user)->not->toBeNull()
         ->and($user->getKey())->toBe($this->user->getKey())

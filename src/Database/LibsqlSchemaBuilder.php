@@ -4,37 +4,23 @@ declare(strict_types=1);
 
 namespace Libsql\Laravel\Database;
 
-use Illuminate\Support\Str;
-use Illuminate\Database\Query\Expression;
+use Illuminate\Database\Connection;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\SQLiteBuilder;
 use Libsql\Laravel\Exceptions\FeatureNotSupportedException;
+use PDO;
 
 class LibsqlSchemaBuilder extends SQLiteBuilder
 {
-    public function __construct(protected LibsqlDatabase $db, \Illuminate\Database\Connection $connection)
+    public function __construct(protected LibsqlDatabase $db, Connection $connection)
     {
         parent::__construct($connection);
     }
 
-    public function createDatabase($name)
+    /** @return never-returns */
+    public function createDatabase($name): void
     {
         throw new FeatureNotSupportedException('Creating database is not supported in LibSQL database.');
-    }
-
-    public function dropDatabaseIfExists($name)
-    {
-        throw new FeatureNotSupportedException('Dropping database is not supported in LibSQL database.');
-    }
-
-    protected function dropAllIndexes(): void
-    {
-        $statement = $this->db->prepare($this->grammar()->compileDropAllIndexes());
-        $results = $statement->query();
-
-        collect($results)->each(function (array $query) {
-            $query = array_values($query)[0];
-            $this->db->query($query);
-        });
     }
 
     public function dropAllTables(): void
@@ -45,90 +31,75 @@ class LibsqlSchemaBuilder extends SQLiteBuilder
         $this->db->exec($this->grammar()->compileDisableForeignKeyConstraints());
 
         $statement = $this->db->prepare($this->grammar()->compileDropAllTables());
-        $results = $statement->query();
-
-        collect($results)->each(function (array $query) {
-            $query = array_values($query)[0];
-            $this->db->query($query);
-        });
+        $this->executeDropStatement($statement);
 
         $this->db->exec($this->grammar()->compileEnableForeignKeyConstraints());
-    }
-
-    protected function dropAllTriggers(): void
-    {
-        $statement = $this->db->prepare($this->grammar()->compileDropAllTriggers());
-        $results = $statement->query();
-
-        collect($results)->each(function (array $query) {
-            $query = array_values($query)[0];
-            $this->db->query($query);
-        });
     }
 
     public function dropAllViews(): void
     {
         $statement = $this->db->prepare($this->grammar()->compileDropAllViews());
-        $results = $statement->query();
-
-        collect($results)->each(function (array $query) {
-            $query = array_values($query)[0];
-            $this->db->query($query);
-        });
+        $this->executeDropStatement($statement);
     }
 
-    public function getColumns($table)
+    /** @return never-returns */
+    public function dropDatabaseIfExists($name): void
     {
-        $table = $this->connection->getTablePrefix() . $table;
+        throw new FeatureNotSupportedException('Dropping database is not supported in LibSQL database.');
+    }
 
-        $data = $this->connection->select("PRAGMA table_xinfo('{$table}')");
+    /** @return array<mixed> */
+    public function getTables($schema = null): array
+    {
+        assert($this->grammar instanceof LibsqlSchemaGrammar);
 
-        $columns = $this->connection->selectOne("SELECT sql FROM sqlite_master WHERE type='table' AND name='{$table}'");
-
-        $pattern = '/(?:\(|,)\s*[\'"`]?([a-zA-Z_][a-zA-Z0-9_]*)[\'"`]?\s+[a-zA-Z]+/i';
-        preg_match_all($pattern, $columns->sql, $matches);
-        $columnMatches = $matches[1] ?? [];
-
-        $delctypes = stdClassToArray($data);
-        foreach ($delctypes as $key => $value) {
-
-            if (isset($delctypes[$key]['name'])) {
-                $delctypes[$key]['name'] = $columnMatches[$key];
-            }
-
-            if (isset($delctypes[$key]['type'])) {
-                $type = strtolower($delctypes[$key]['type']);
-                $delctypes[$key]['type'] = $type;
-                $delctypes[$key]['type_name'] = $type;
-            }
-
-            if (isset($delctypes[$key]['notnull'])) {
-                $delctypes[$key]['nullable'] = $delctypes[$key]['notnull'] == 1 ? false : true;
-            }
-
-            if (isset($delctypes[$key]['dflt_value'])) {
-                $delctypes[$key]['default'] = $delctypes[$key]['dflt_value'] == 'NULL' ? null : new Expression(Str::wrap($delctypes[$key]['dflt_value'], '(', ')'));
-            }
-
-            if (isset($delctypes[$key]['pk'])) {
-                $delctypes[$key]['auto_increment'] = $delctypes[$key]['pk'] == 1 ? true : false;
-            }
-
-            $delctypes[$key]['collation'] = null;
-            $delctypes[$key]['comment'] = null;
-            $delctypes[$key]['generation'] = null;
+        try {
+            /** @var bool $withSize */
+            $withSize = $this->connection->scalar($this->grammar->compileDbstatExists());
+        } catch (QueryException) {
+            $withSize = false;
         }
 
-        $keyOrder = ['name', 'type_name', 'type', 'collation', 'nullable', 'default', 'auto_increment', 'comment', 'generation', 'pk', 'notnull', 'dflt_value', 'cid', 'hidden'];
-        $delctypes = reorderArrayKeys($delctypes, $keyOrder);
+        return $this->connection
+            ->getPostProcessor()
+            ->processTables(
+                $this->connection->selectFromWriteConnection(
+                    $this->grammar->compileTables($schema, $withSize)
+                )
+            );
+    }
 
-        return $delctypes;
+    protected function dropAllIndexes(): void
+    {
+        $statement = $this->db->prepare($this->grammar()->compileDropAllIndexes());
+
+        $this->executeDropStatement($statement);
+    }
+
+    protected function dropAllTriggers(): void
+    {
+        $statement = $this->db->prepare($this->grammar()->compileDropAllTriggers());
+        $this->executeDropStatement($statement);
     }
 
     protected function grammar(): LibsqlSchemaGrammar
     {
-        $grammar = new LibsqlSchemaGrammar;
+        return new LibsqlSchemaGrammar($this->connection);
+    }
 
-        return $grammar;
+    private function executeDropStatement(LibsqlStatement $statement): void
+    {
+        $statement->setFetchMode(PDO::FETCH_ASSOC);
+
+        /** @var array<mixed> $result */
+        $result = $statement->query();
+
+        collect($result)->each(function ($query) {
+            assert(is_array($query));
+            /** @var string $sql */
+            $sql = data_get(array_values($query), '0', '');
+
+            $this->db->query($sql);
+        });
     }
 }

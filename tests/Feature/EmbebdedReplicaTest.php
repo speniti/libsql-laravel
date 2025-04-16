@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
 NOTE:
     Before activated this tests, make sure you've libsql server or turso url provider
@@ -16,24 +18,24 @@ beforeEach(function () {
     }
     clearDirectory();
     sleep(2);
-    DB::setDefaultConnection('otherdb2');
+    DB::setDefaultConnection('embedded');
 });
 
 test('it can connect to a embedded replica', function () {
-    DB::setDefaultConnection('otherdb2');
-    $mode = DB::connection('otherdb2')->getConnectionMode();
+    DB::setDefaultConnection('embedded');
+    $mode = DB::connection('embedded')->getConnectionMode();
     expect($mode)->toBe('remote_replica');
 })->group('EmbeddedReplicaTest', 'FeatureTest');
 
 test('it can get all rows from the projects table through the embedded replica', function () {
-    DB::setDefaultConnection('otherdb2');
+    DB::setDefaultConnection('embedded');
     Schema::dropAllTables();
     migrateTables('projects');
 
-    $this->project1 = Project::make()->setConnection('otherdb2')->factory()->create();
-    $this->project2 = Project::make()->setConnection('otherdb2')->factory()->create();
-    $this->project3 = Project::make()->setConnection('otherdb2')->factory()->create();
-    $projects = DB::connection('otherdb2')->table('projects')->get();
+    $this->project1 = Project::make()->setConnection('embedded')->factory()->create();
+    $this->project2 = Project::make()->setConnection('embedded')->factory()->create();
+    $this->project3 = Project::make()->setConnection('embedded')->factory()->create();
+    $projects = DB::connection('embedded')->table('projects')->get();
     expect($projects->count())->toBe(3);
     clearDirectory();
 })->group('EmbeddedReplicaTest', 'FeatureTest');

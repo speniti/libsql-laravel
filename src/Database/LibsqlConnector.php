@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Libsql\Laravel\Database;
 
-class LibsqlConnector
+use Illuminate\Database\Connectors\SQLiteConnector;
+
+class LibsqlConnector extends SQLiteConnector
 {
     /**
-     * Establish a database connection.
+     * @param  array<mixed>  $config
+     *
+     * @phpstan-ignore method.childReturnType
      */
-    public function connect(array $config): LibsqlDatabase
+    public function connect(array $config): LibsqlDatabase /** @phpstan-ignore method.childReturnType */
     {
         return new LibsqlDatabase($config);
     }

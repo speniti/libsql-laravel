@@ -22,6 +22,11 @@ class Phone extends Model
         'phone_number',
     ];
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -33,10 +38,5 @@ class Phone extends Model
             'id' => 'integer',
             'user_id' => 'integer',
         ];
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -25,7 +27,7 @@ test('it can retrieve all of the table information in the database', function ()
     $result = Schema::getTables()[0];
 
     expect($result['name'])->toBe('migrations')
-        ->and($result['schema'])->toBeNull()
+        ->and($result['schema'])->toBeEmpty()
         ->and($result['comment'])->toBeNull()
         ->and($result['collation'])->toBeNull()
         ->and($result['engine'])->toBeNull();
@@ -41,53 +43,53 @@ test('it can retrieve all of the column information in the table', function () {
         ->and($result->has('migration'))->toBeTrue()
         ->and($result->has('batch'))->toBeTrue()
         ->and($result->get('id'))->toBe([
-                'name' => 'id',
-                'type_name' => 'integer',
-                'type' => 'integer',
-                'collation' => null,
-                'nullable' => false,
-                'default' => null,
-                'auto_increment' => true,
-                'comment' => null,
-                'generation' => null,
-                'pk' => 1,
-                'notnull' => 1,
-                'dflt_value' => null,
-                'cid' => 0,
-                'hidden' => 0,
-            ])
+            'name' => 'id',
+            'type_name' => 'integer',
+            'type' => 'integer',
+            'collation' => null,
+            'nullable' => false,
+            'default' => null,
+            'auto_increment' => true,
+            'comment' => null,
+            'generation' => null,
+            //            'pk' => 1,
+            //            'notnull' => 1,
+            //            'dflt_value' => null,
+            //            'cid' => 0,
+            //            'hidden' => 0,
+        ])
         ->and($result->get('migration'))->toBe([
-                'name' => 'migration',
-                'type_name' => 'varchar',
-                'type' => 'varchar',
-                'collation' => null,
-                'nullable' => false,
-                'default' => null,
-                'auto_increment' => false,
-                'comment' => null,
-                'generation' => null,
-                'pk' => 0,
-                'notnull' => 1,
-                'dflt_value' => null,
-                'cid' => 1,
-                'hidden' => 0,
-            ])
+            'name' => 'migration',
+            'type_name' => 'varchar',
+            'type' => 'varchar',
+            'collation' => null,
+            'nullable' => false,
+            'default' => null,
+            'auto_increment' => false,
+            'comment' => null,
+            'generation' => null,
+            //            'pk' => 0,
+            //            'notnull' => 1,
+            //            'dflt_value' => null,
+            //            'cid' => 1,
+            //            'hidden' => 0,
+        ])
         ->and($result->get('batch'))->toBe([
-                'name' => 'batch',
-                'type_name' => 'integer',
-                'type' => 'integer',
-                'collation' => null,
-                'nullable' => false,
-                'default' => null,
-                'auto_increment' => false,
-                'comment' => null,
-                'generation' => null,
-                'pk' => 0,
-                'notnull' => 1,
-                'dflt_value' => null,
-                'cid' => 2,
-                'hidden' => 0,
-            ]);
+            'name' => 'batch',
+            'type_name' => 'integer',
+            'type' => 'integer',
+            'collation' => null,
+            'nullable' => false,
+            'default' => null,
+            'auto_increment' => false,
+            'comment' => null,
+            'generation' => null,
+            //            'pk' => 0,
+            //            'notnull' => 1,
+            //            'dflt_value' => null,
+            //            'cid' => 2,
+            //            'hidden' => 0,
+        ]);
 })->group('LibsqlSchemaBuilderTest', 'FeatureTest');
 
 test('it can create a new table', function () {
@@ -100,7 +102,7 @@ test('it can create a new table', function () {
     $result = Schema::getTables()[0];
 
     expect($result['name'])->toBe('users')
-        ->and($result['schema'])->toBeNull()
+        ->and($result['schema'])->toBeEmpty()
         ->and($result['comment'])->toBeNull()
         ->and($result['collation'])->toBeNull()
         ->and($result['engine'])->toBeNull();

@@ -24,17 +24,11 @@ class Comment extends Model
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Get the post the comment belongs to.
      */
-    protected function casts(): array
+    public function post(): BelongsTo
     {
-        return [
-            'id' => 'integer',
-            'user_id' => 'integer',
-            'post_id' => 'integer',
-        ];
+        return $this->belongsTo(Post::class);
     }
 
     /**
@@ -46,10 +40,16 @@ class Comment extends Model
     }
 
     /**
-     * Get the post the comment belongs to.
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
      */
-    public function post(): BelongsTo
+    protected function casts(): array
     {
-        return $this->belongsTo(Post::class);
+        return [
+            'id' => 'integer',
+            'user_id' => 'integer',
+            'post_id' => 'integer',
+        ];
     }
 }

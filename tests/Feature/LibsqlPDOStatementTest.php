@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -28,7 +30,7 @@ test('it can fetch all row sets of a simple select query result in associative a
     $this->connection->bindValues($statement, $this->connection->prepareBindings(['table', 'sqlite_%']));
     $statement->execute();
 
-    $statement->setFetchMode(\PDO::FETCH_ASSOC);
+    $statement->setFetchMode(PDO::FETCH_ASSOC);
     $response = $statement->fetchAll();
 
     expect(count($response))->toBe(1)
@@ -51,7 +53,7 @@ test('it can fetch each row set of a simple select query result in associative a
 
     $statement->execute();
 
-    $statement->setFetchMode(\PDO::FETCH_ASSOC);
+    $statement->setFetchMode(PDO::FETCH_ASSOC);
     $response = $statement->fetch();
 
     expect($response['type'])->toBe($expectation['type'])
@@ -74,6 +76,7 @@ test('it can perform query execution with binding values', function () {
     DB::statement('INSERT INTO "migrations" ("migration", "batch") VALUES (?, ?)', ['CreateUsersTable', 1]);
 
     $statement = $this->pdo->prepare('SELECT * FROM "migrations" WHERE "migration" = ? AND "batch" = ?');
+    $statement->setFetchMode(PDO::FETCH_ASSOC);
     $statement->execute(['CreateUsersTable', 1]);
 
     expect($statement->rowCount())->toBe(1);

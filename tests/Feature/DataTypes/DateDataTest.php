@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -15,47 +17,27 @@ afterEach(function () {
 });
 
 test('it can insert a new date data', function () {
-    $date = '2021-01-01';
-
-    $result = DB::table('date_table')->insert([
-        'started_at' => $date,
-    ]);
-
-    $newData = DB::table('date_table')->first();
+    $result = DB::table('date_table')->insert(['started_at' => $date = '2021-01-01']);
+    $data = DB::table('date_table')->first();
 
     expect($result)->toBeTrue()
         ->and(DB::table('date_table')->count())->toBe(1)
-        ->and($newData->started_at)->toBe($date);
+        ->and($data->started_at)->toBe($date);
 })->group('DateDataTest', 'DataTypes', 'FeatureTest');
 
 test('it can update an existing date data', function () {
-    $date = '2021-01-01';
+    DB::table('date_table')->insert(['started_at' => '2021-01-01']);
 
-    DB::table('date_table')->insert([
-        'started_at' => $date,
-    ]);
-
-    $newDate = '2021-02-01';
-
-    $result = DB::table('date_table')->update([
-        'started_at' => $newDate,
-    ]);
-
-    $updatedData = DB::table('date_table')->first();
+    $result = DB::table('date_table')->update(['started_at' => $date = '2021-02-01']);
+    $data = DB::table('date_table')->first();
 
     expect($result)->toBe(1)
-        ->and($updatedData->started_at)->toBe($newDate);
+        ->and($data->started_at)->toBe($date);
 })->group('DateDataTest', 'DataTypes', 'FeatureTest');
 
 test('it can find the saved record', function () {
-    $date = '2021-01-01';
-
-    DB::table('date_table')->insert([
-        'started_at' => '2021-02-01',
-    ]);
-    DB::table('date_table')->insert([
-        'started_at' => $date,
-    ]);
+    DB::table('date_table')->insert(['started_at' => '2021-02-01']);
+    DB::table('date_table')->insert(['started_at' => $date = '2021-01-01']);
 
     $found = DB::table('date_table')->where('started_at', $date)->first();
 

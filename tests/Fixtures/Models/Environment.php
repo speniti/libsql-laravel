@@ -22,6 +22,16 @@ class Environment extends Model
         'name',
     ];
 
+    public function deployments(): HasMany
+    {
+        return $this->hasMany(Deployment::class);
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -33,15 +43,5 @@ class Environment extends Model
             'id' => 'integer',
             'project_id' => 'integer',
         ];
-    }
-
-    public function deployments(): HasMany
-    {
-        return $this->hasMany(Deployment::class);
-    }
-
-    public function project(): BelongsTo
-    {
-        return $this->belongsTo(Project::class);
     }
 }

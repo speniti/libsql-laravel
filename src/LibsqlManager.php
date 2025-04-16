@@ -12,18 +12,23 @@ class LibsqlManager
 {
     protected LibsqlDatabase $client;
 
+    /** @var Collection<string, mixed> */
     protected Collection $config;
 
+    /** @param array<mixed> $config */
     public function __construct(array $config = [])
     {
         $this->config = new Collection($config);
-        $this->client = new LibSQLDatabase($config);
+        $this->client = new LibsqlDatabase($config);
     }
 
+    /** @param array<mixed> $arguments */
     public function __call(string $method, array $arguments = []): mixed
     {
-        if (!method_exists($this->client, $method)) {
-            throw new BadMethodCallException('Call to undefined method ' . static::class . '::' . $method . '()');
+        if (! method_exists($this->client, $method)) {
+            throw new BadMethodCallException(
+                sprintf('Call to undefined method %s::%s()', static::class, $method)
+            );
         }
 
         return $this->client->$method(...$arguments);

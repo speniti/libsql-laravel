@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Fixtures\Models\Post;
@@ -36,7 +38,7 @@ test('it can retrieve the related model in one to many relationship', function (
 
 test('it can retrieve the related model in one to many relationship using eager loading', function () {
     $user = User::with('posts')->findOrFail($this->user->getKey());
-    $posts = $user->posts;
+    $posts = $user?->posts;
 
     expect($posts)->not->toBeEmpty()
         ->and($posts)->toBeInstanceOf(Collection::class)
@@ -60,7 +62,7 @@ test('it can retrieve the related model in inverted way of one to many relations
 
 test('it can retrieve the related model in inverted way of one to many relationship using eager loading', function () {
     $post = Post::with('user')->findOrFail($this->post1->getKey());
-    $user = $post->user;
+    $user = $post?->user;
 
     expect($user)->not->toBeNull()
         ->and($user->getKey())->toBe($this->user->getKey())

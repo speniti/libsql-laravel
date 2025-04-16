@@ -9,11 +9,11 @@ use Libsql\Laravel\Tests\Feature\EloquentAttributeCasting\Enums\Status;
 
 class EnumCastingModel extends Model
 {
-    protected $table = 'enum_casting_table';
+    public $timestamps = false;
 
     protected $guarded = false;
 
-    public $timestamps = false;
+    protected $table = 'enum_casting_table';
 
     protected function casts(): array
     {

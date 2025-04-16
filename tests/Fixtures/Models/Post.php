@@ -24,6 +24,16 @@ class Post extends Model
         'content',
     ];
 
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -35,15 +45,5 @@ class Post extends Model
             'id' => 'integer',
             'user_id' => 'integer',
         ];
-    }
-
-    public function comments(): HasMany
-    {
-        return $this->hasMany(Comment::class);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 }

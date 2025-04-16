@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class TimestampCastingModel extends Model
 {
-    protected $table = 'timestamp_casting_table';
+    public $timestamps = false;
 
     protected $guarded = false;
 
-    public $timestamps = false;
+    protected $table = 'timestamp_casting_table';
 
     protected function casts(): array
     {

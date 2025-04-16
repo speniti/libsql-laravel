@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Fixtures\Models\Deployment;
@@ -46,7 +48,7 @@ test('it can retrieve the related model in has many through relationship', funct
 
 test('it can retrieve the related model in has many through relationship using eager loading', function () {
     $project = Project::with('deployments')->findOrFail($this->project->getKey());
-    $deployments = $project->deployments;
+    $deployments = $project?->deployments;
 
     expect($deployments)->not->toBeEmpty()
         ->and($deployments)->toBeInstanceOf(Collection::class)

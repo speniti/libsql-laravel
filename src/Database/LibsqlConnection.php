@@ -1,158 +1,57 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Libsql\Laravel\Database;
 
+use Closure;
+use Exception;
 use Illuminate\Database\Connection;
 use Illuminate\Filesystem\Filesystem;
+use JsonException;
 use Libsql\Transaction;
+use PDO;
+use PDOException;
+use ReturnTypeWillChange;
+use SQLite3;
 
 class LibsqlConnection extends Connection
 {
+    /** @var array<mixed> */
+    protected array $bindings = [];
+
     protected LibsqlDatabase $db;
 
-    protected Transaction $tx;
+    protected int $mode = PDO::FETCH_OBJ;
 
     /**
-     * The active PDO connection used for reads.
+     * @var LibsqlDatabase|Closure
      *
-     * @var LibsqlDatabase|\Closure
+     * @phpstan-ignore property.phpDocType
      */
     protected $readPdo;
 
-    protected array $lastInsertIds = [];
+    protected Transaction $tx;
 
-    protected array $bindings = [];
-
-    protected int $mode = \PDO::FETCH_OBJ;
-
+    /** @param array<mixed> $config */
     public function __construct(LibsqlDatabase $db, string $database = ':memory:', string $tablePrefix = '', array $config = [])
     {
-        $libsqlDb = function () use ($db) {
-            return $db;
-        };
-        parent::__construct($libsqlDb, $database, $tablePrefix, $config);
+        parent::__construct(static fn () => $db, $database, $tablePrefix, $config);
 
         $this->db = $db;
         $this->schemaGrammar = $this->getDefaultSchemaGrammar();
     }
 
-    public function sync(): void
-    {
-        $this->db->sync();
-    }
-
-    public function getConnectionMode(): string
-    {
-        return $this->db->getConnectionMode();
-    }
-
-    public function inTransaction(): bool
-    {
-        return $this->db->inTransaction();
-    }
-
-    public function setFetchMode(int $mode, mixed ...$args): bool
-    {
-        $this->mode = $mode;
-
-        return true;
-    }
-
-    public function getServerVersion(): string
-    {
-        return $this->db->version();
-    }
-
-    public function getPdo(): LibsqlDatabase
-    {
-        return $this->db;
-    }
-
     /**
-     * Set the active PDO connection used for reads.
-     * 
-     * @param LibsqlDatabase|\Closure $pdo
-     * @return \Libsql\Laravel\Database\LibsqlConnection
+     * @param  string  $query
+     * @param  array<mixed>  $bindings
      */
-    public function setReadPdo($pdo): self
+    public function affectingStatement($query, $bindings = []): int
     {
-        $this->readPdo = $pdo;
+        $bindings = array_map(static fn ($binding) => is_bool($binding) ? (int) $binding : $binding, $bindings);
 
-        return $this;
-    }
-
-    public function createReadPdo(array $config): ?LibsqlDatabase
-    {
-        $db = function () use ($config) {
-            return new LibsqlDatabase($config);
-        };
-        $this->setReadPdo($db);
-
-        return $db();
-    }
-
-    public function selectOne($query, $bindings = [], $useReadPdo = true)
-    {
-        $records = $this->select($query, $bindings, $useReadPdo);
-
-        return array_shift($records);
-    }
-
-    public function select($query, $bindings = [], $useReadPdo = true)
-    {
-        $bindings = array_map(function ($binding) {
-            return is_bool($binding) ? (int) $binding : $binding;
-        }, $bindings);
-
-        $data = $this->run($query, $bindings, function ($query, $bindings) {
-            if ($this->pretending()) {
-                return [];
-            }
-
-            $statement = $this->getPdo()->prepare($query);
-            $results = (array) $statement->query($bindings);
-
-            $decodedResults = array_map(function ($row) {
-                return decodeBlobs($row);
-            }, $results);
-
-            return $decodedResults;
-        });
-
-        $rowValues = array_values($data);
-
-        return match ($this->mode) {
-            \PDO::FETCH_BOTH => array_merge($data, $rowValues),
-            \PDO::FETCH_ASSOC, \PDO::FETCH_NAMED => $data,
-            \PDO::FETCH_NUM => $rowValues,
-            \PDO::FETCH_OBJ => arrayToStdClass($data),
-            default => throw new \PDOException('Unsupported fetch mode.'),
-        };
-    }
-
-    public function insert($query, $bindings = []): bool
-    {
-        return $this->affectingStatement($query, $bindings) > 0;
-    }
-
-    public function update($query, $bindings = [])
-    {
-        return $this->affectingStatement($query, $bindings);
-    }
-
-    public function delete($query, $bindings = [])
-    {
-        return $this->affectingStatement($query, $bindings);
-    }
-
-    public function affectingStatement($query, $bindings = [])
-    {
-        $bindings = array_map(function ($binding) {
-            return is_bool($binding) ? (int) $binding : $binding;
-        }, $bindings);
-
-        return $this->run($query, $bindings, function ($query, $bindings) {
+        /** @var int $affected */
+        $affected = $this->run($query, $bindings, function (string $query, array $bindings) {
             if ($this->pretending()) {
                 return 0;
             }
@@ -160,8 +59,7 @@ class LibsqlConnection extends Connection
             $statement = $this->getPdo()->prepare($query);
 
             foreach ($bindings as $key => $value) {
-                $type = is_resource($value) ? \PDO::PARAM_LOB : \PDO::PARAM_STR;
-                $statement->bindValue($key, $value, $type);
+                $statement->bindValue($key, $value);
             }
 
             $statement->execute();
@@ -170,13 +68,42 @@ class LibsqlConnection extends Connection
 
             return $count;
         });
+
+        return $affected;
     }
 
-    #[\ReturnTypeWillChange]
-    protected function getDefaultSchemaGrammar(): LibsqlSchemaGrammar
+    /** @param array<mixed> $config */
+    public function createReadPdo(array $config): ?LibsqlDatabase
     {
-        ($grammar = new LibsqlSchemaGrammar)->setConnection($this);
-        return $this->withTablePrefix($grammar);
+        $db = static fn () => new LibsqlDatabase($config);
+        $this->setReadPdo($db);
+
+        return $db();
+    }
+
+    /** @param ?string $value */
+    public function escapeString($value): string
+    {
+        if ($value === null) {
+            return 'NULL';
+        }
+
+        return SQLite3::escapeString($value);
+    }
+
+    public function getConnectionMode(): string
+    {
+        return $this->db->getConnectionMode();
+    }
+
+    public function getDefaultPostProcessor(): LibsqlQueryProcessor
+    {
+        return new LibsqlQueryProcessor;
+    }
+
+    public function getPdo(): LibsqlDatabase /** @phpstan-ignore method.childReturnType */
+    {
+        return $this->db;
     }
 
     public function getSchemaBuilder(): LibsqlSchemaBuilder
@@ -188,75 +115,164 @@ class LibsqlConnection extends Connection
         return new LibsqlSchemaBuilder($this->db, $this);
     }
 
-    public function getDefaultPostProcessor(): LibsqlQueryProcessor
+    public function getSchemaState(?Filesystem $files = null, ?callable $processFactory = null): LibsqlSchemaState
     {
-        return new LibsqlQueryProcessor;
+        return new LibsqlSchemaState($this, $files, $processFactory);
     }
 
-    public function useDefaultPostProcessor()
+    public function getServerVersion(): string
     {
-        $this->postProcessor = $this->getDefaultPostProcessor();
+        return $this->db->version();
     }
 
-    protected function getDefaultQueryGrammar()
+    /** @param array<mixed> $bindings */
+    public function insert($query, $bindings = []): bool
     {
-        ($grammar = new LibsqlQueryGrammar)->setConnection($this);
-        $this->withTablePrefix($grammar);
-
-        return $grammar;
+        return $this->affectingStatement($query, $bindings) > 0;
     }
 
-    public function useDefaultQueryGrammar()
+    public function inTransaction(): bool
     {
-        $this->queryGrammar = $this->getDefaultQueryGrammar();
+        return $this->db->inTransaction();
     }
 
-    public function query()
+    public function isUniqueConstraintError(Exception $exception): bool
     {
-        $grammar = $this->getQueryGrammar();
-        $processor = $this->getPostProcessor();
-
-        return new LibsqlQueryBuilder(
-            $this,
-            $grammar,
-            $processor
+        return (bool) preg_match(
+            '#(column(s)? .* (is|are) not unique|UNIQUE constraint failed: .*)#i',
+            $exception->getMessage()
         );
     }
 
-    public function getSchemaState(?Filesystem $files = null, ?callable $processFactory = null): LibsqlSchemaState
+    public function query(): LibsqlQueryBuilder
     {
-        return new LibSQLSchemaState($this, $files, $processFactory);
+        return new LibsqlQueryBuilder($this, $this->getQueryGrammar(), $this->getPostProcessor());
     }
 
-    public function isUniqueConstraintError(\Exception $exception): bool
-    {
-        return (bool) preg_match('#(column(s)? .* (is|are) not unique|UNIQUE constraint failed: .*)#i', $exception->getMessage());
-    }
-
-    public function escapeString($input)
+    public function quote(mixed $input): string
     {
         if ($input === null) {
-            return 'NULL';
-        }
-
-        return \SQLite3::escapeString($input);
-    }
-
-    public function quote($input)
-    {
-        if ($input === null) {
-            return 'NULL';
+            return 'null';
         }
 
         if (is_string($input)) {
-            return "'" . $this->escapeString($input) . "'";
+            return "'".$this->escapeString($input)."'";
         }
 
         if (is_resource($input)) {
-            return $this->escapeBinary(stream_get_contents($input));
+            /** @var string $contents */
+            $contents = stream_get_contents($input);
+
+            return $this->escapeBinary($contents);
         }
 
+        /** @var string $input */
         return $this->escapeBinary($input);
     }
 
+    /**
+     * @param  array<mixed>  $bindings
+     * @return array<mixed>
+     *
+     * @throws JsonException
+     */
+    public function select($query, $bindings = [], $useReadPdo = true): array|object
+    {
+        $bindings = array_map(static fn ($binding) => is_bool($binding) ? (int) $binding : $binding, $bindings);
+
+        /** @var array<mixed> $data */
+        $data = $this->run($query, $bindings, function (string $query, array $bindings) {
+            if ($this->pretending()) {
+                return [];
+            }
+
+            $results = (array) $this->getPdo()->prepare($query)->query($bindings);
+
+            return array_map(
+                static function ($row) {
+                    assert(is_array($row));
+
+                    return array_map(
+                        static fn ($value) => is_resource($value)
+                            ? stream_get_contents($value)
+                            : $value,
+                        $row
+                    );
+                },
+                $results
+            );
+        });
+
+        $values = array_values($data);
+
+        return match ($this->mode) {
+            PDO::FETCH_BOTH => array_merge($data, $values),
+            PDO::FETCH_ASSOC, PDO::FETCH_NAMED => $data,
+            PDO::FETCH_NUM => $values,
+            PDO::FETCH_OBJ => $this->toObject($data),
+            default => throw new PDOException('Unsupported fetch mode.'),
+        };
+    }
+
+    /**
+     * @param  array<mixed>  $bindings
+     *
+     * @throws JsonException
+     */
+    public function selectOne($query, $bindings = [], $useReadPdo = true)
+    {
+        $this->setFetchMode(PDO::FETCH_ASSOC);
+
+        /** @var array<mixed> $records */
+        $records = $this->select($query, $bindings, $useReadPdo);
+
+        return array_shift($records);
+    }
+
+    public function setFetchMode(int $mode): bool
+    {
+        $this->mode = $mode;
+
+        return true;
+    }
+
+    /** @throws Exception */
+    public function sync(): void
+    {
+        $this->db->sync();
+    }
+
+    /**
+     * @param  array<mixed>  $data
+     * @return array<mixed>
+     *
+     * @throws JsonException
+     */
+    public function toObject(array $data): array
+    {
+        return array_map(
+            static function ($item) {
+                assert(is_array($item));
+
+                return (object) array_map(
+                    static fn ($value) => is_array($value) && ! is_vector($value)
+                        ? json_encode($value, JSON_THROW_ON_ERROR)
+                        : $value,
+                    $item
+                );
+            },
+            $data
+        );
+    }
+
+    protected function getDefaultQueryGrammar(): LibsqlQueryGrammar
+    {
+        return new LibsqlQueryGrammar($this);
+    }
+
+    #[ReturnTypeWillChange]
+    protected function getDefaultSchemaGrammar(): LibsqlSchemaGrammar
+    {
+        return new LibsqlSchemaGrammar($this);
+    }
 }

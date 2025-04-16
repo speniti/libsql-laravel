@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Feature\EloquentAttributeCasting\CastingModels\DateCastingModel;
 
@@ -52,7 +54,7 @@ test('it can insert a new record using Eloquent ORM with Carbon instance', funct
     $birthdate = '1990-01-01';
 
     DateCastingModel::create([
-        'birthdate' => new \Illuminate\Support\Carbon($birthdate),
+        'birthdate' => new Illuminate\Support\Carbon($birthdate),
     ]);
 
     $result = DateCastingModel::first();
@@ -72,7 +74,7 @@ test('it can update an existing record using Eloquent ORM with Carbon instance',
     $newBirthdate = '1995-01-01';
 
     DateCastingModel::first()->update([
-        'birthdate' => new \Illuminate\Support\Carbon($newBirthdate),
+        'birthdate' => new Illuminate\Support\Carbon($newBirthdate),
     ]);
 
     $result = DateCastingModel::first();

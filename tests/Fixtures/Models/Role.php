@@ -23,6 +23,11 @@ class Role extends Model
         'name',
     ];
 
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'user_roles');
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -33,10 +38,5 @@ class Role extends Model
         return [
             'id' => 'integer',
         ];
-    }
-
-    public function users(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'user_roles');
     }
 }

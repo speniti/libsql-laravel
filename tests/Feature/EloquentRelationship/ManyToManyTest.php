@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Fixtures\Models\Role;
@@ -33,7 +35,7 @@ test('it can retrieve the related model in many to many relationship', function 
 
 test('it can retrieve the related model in many to many relationship using eager loading', function () {
     $user = User::with('roles')->findOrFail($this->user->getKey());
-    $roles = $user->roles;
+    $roles = $user?->roles;
 
     expect($roles)->not->toBeEmpty()
         ->and($roles->count())->toBe(2)
@@ -53,7 +55,7 @@ test('it can retrieve the related model in inverted way of many to many relation
 
 test('it can retrieve the related model in inverted way of many to many relationship using eager loading', function () {
     $role = Role::with('users')->findOrFail($this->role1->getKey());
-    $users = $role->users;
+    $users = $role?->users;
 
     expect($users)->not->toBeEmpty()
         ->and($users)->toBeInstanceOf(Collection::class)

@@ -8,11 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class FloatCastingModel extends Model
 {
-    protected $table = 'float_casting_table';
+    public $timestamps = false;
 
     protected $guarded = false;
 
-    public $timestamps = false;
+    protected $table = 'float_casting_table';
 
     protected function casts(): array
     {

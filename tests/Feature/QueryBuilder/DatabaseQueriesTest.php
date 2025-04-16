@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Libsql\Laravel\Tests\Fixtures\Models\Project;
@@ -39,8 +41,8 @@ test('it can retrieve a single row from the table with find() method', function 
 
     expect($project)->not->toBeNull()
         ->and($project)->toBeObject()
-        ->and($project->id)->toEqual($this->project2->id)
-        ->and($project->name)->toEqual($this->project2->name);
+        ->and($project?->id)->toEqual($this->project2->id)
+        ->and($project?->name)->toEqual($this->project2->name);
 })->group('DatabaseQueriesTest', 'QueryBuilder', 'FeatureTest');
 
 test('it will return null if there was no record with the given id to be found', function () {

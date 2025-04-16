@@ -21,6 +21,11 @@ class Deployment extends Model
         'commit_hash',
     ];
 
+    public function environment(): BelongsTo
+    {
+        return $this->belongsTo(Environment::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -32,10 +37,5 @@ class Deployment extends Model
             'id' => 'integer',
             'environment_id' => 'integer',
         ];
-    }
-
-    public function environment(): BelongsTo
-    {
-        return $this->belongsTo(Environment::class);
     }
 }
