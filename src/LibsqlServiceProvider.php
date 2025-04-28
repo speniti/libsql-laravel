@@ -54,7 +54,7 @@ class LibsqlServiceProvider extends PackageServiceProvider
                 $config = [...$config, ...compact('name', 'driver', 'database', 'prefix')];
 
                 $connection = new LibsqlConnection(
-                    db: (new LibsqlConnector())->connect($config),
+                    db: new LibsqlConnector()->connect($config),
                     database: $database,
                     tablePrefix: $prefix,
                     config: $config

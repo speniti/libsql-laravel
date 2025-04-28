@@ -201,8 +201,14 @@ class LibsqlDatabase
         /** @var string $path */
         $path = data_get($config, 'database', '');
 
-        /** @var ?string $url */
-        $url = data_get($config, 'url');
+        /** @var string $driver */
+        $driver = data_get($config, 'driver', 'libsql');
+
+        /** @var string $host */
+        $host = data_get($config, 'host', '');
+
+        /** @var string $url */
+        $url = data_get($config, 'url', $host ? "$driver://$host" : '');
 
         /** @var ?string $authToken */
         $authToken = data_get($config, 'password');
